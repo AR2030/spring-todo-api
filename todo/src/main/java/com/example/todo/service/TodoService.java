@@ -4,9 +4,11 @@ import com.example.todo.model.Todo;
 import com.example.todo.model.User;
 import com.example.todo.repository.TodoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -14,26 +16,37 @@ import java.util.List;
 public class TodoService {
     @Autowired
     private TodoRepository todoRepository;
+    @Autowired
+    private UserService userService;
 
     public List<Todo> getAll() {
-        return todoRepository.findAll();
+        User currentUser = userService.getCurrentUser();
+        return todoRepository.findByUser(currentUser);
     }
 
     public Todo save(Todo todo) {
-        // استرجع المستخدم من SecurityContext
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        System.out.println("Saving todo...");
+        System.out.println("Auth: " + SecurityContextHolder.getContext().getAuthentication());
 
-        // اربط التودو بالمستخدم الحالي
-        todo.setUser(user);
-
+        User currentUser = userService.getCurrentUser();
+        System.out.println("Current User: " + currentUser.getUsername());
+        todo.setUser(currentUser);
         return todoRepository.save(todo);
     }
     public void delete(Long id) {
-        todoRepository.deleteById(id);
+        User currentUser = userService.getCurrentUser();
+        Todo todo = todoRepository.findByIdAndUser(id, currentUser)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Todo not found"));
+
+        todoRepository.delete(todo);
     }
 
+
     public ResponseEntity<Todo> update(Long id, Todo todo) {
-        return todoRepository.findById(id)
+        User currentUser = userService.getCurrentUser();
+
+        // Check if the to-do exists and belongs to the current user
+        return todoRepository.findByIdAndUser(id, currentUser)
                 .map(existingTodo -> {
                     existingTodo.setTitle(todo.getTitle());
                     existingTodo.setCompleted(todo.isCompleted());
@@ -41,5 +54,6 @@ public class TodoService {
                     return ResponseEntity.ok(updatedTodo);
                 })
                 .orElse(ResponseEntity.notFound().build());
+
     }
 }

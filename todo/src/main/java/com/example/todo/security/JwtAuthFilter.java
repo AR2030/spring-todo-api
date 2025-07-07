@@ -2,12 +2,14 @@ package com.example.todo.security;
 
 import com.example.todo.model.User;
 import com.example.todo.repository.UserRepository;
+import com.example.todo.service.TokenBlacklistService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -24,6 +26,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private TokenBlacklistService blacklistService;
+
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -34,6 +40,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
 
+            if (blacklistService.isTokenBlacklisted(token)) {
+                response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                return;
+            }
             if (jwtService.isTokenValid(token)) {
                 String username = jwtService.extractUsername(token);
                 User user = userRepository.findByUsername(username).orElse(null);

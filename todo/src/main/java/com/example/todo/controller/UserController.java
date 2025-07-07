@@ -19,33 +19,7 @@ import java.util.Optional;
 @RequestMapping("/api/users")
 public class UserController {
 
-    @Autowired
-    private UserService userService;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-    @Autowired
-    private JwtService jwtService;
 
-    @PostMapping("/register")
-    public ResponseEntity<User> registerUser(@RequestBody User user) {
-        User savedUser = userService.register(user);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
-    }
-
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        Optional<User> optionalUser = userService.findByUsername(request.getUsername());
-
-        if (optionalUser.isPresent()) {
-            User user = optionalUser.get();
-            if (passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-                String token = jwtService.generateToken(user.getUsername());
-                return ResponseEntity.ok(token);
-            }
-        }
-
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password ❌");
-    }
 
 
 }

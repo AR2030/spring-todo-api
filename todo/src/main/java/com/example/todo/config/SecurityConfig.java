@@ -23,7 +23,7 @@ public class SecurityConfig {
                         .csrf(AbstractHttpConfigurer::disable)
                         .headers(AbstractHttpConfigurer::disable) // disables all default headers, including frame options
                         .authorizeHttpRequests(auth -> auth
-                                .requestMatchers("/api/users/**","/h2-console/**").permitAll()
+                                .requestMatchers("/api/auth/login","/api/auth/register","/h2-console/**").permitAll()
                                 .anyRequest().authenticated())
                                 .addFilterBefore(jwtAuthFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
 
